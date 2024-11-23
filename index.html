@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="plugin/Leaflet.defaultextent-master/dist/leaflet.defaultextent.css">
+
+    <title>Web-GIS: Administrasi Desa</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map-container {
+            display: flex;
+            height: calc(100vh - 56px);
+            /* Adjusting height to account for the header */
+        }
+
+        #map {
+            flex: 1;
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgb(255, 255, 255);
+            padding: 10px;
+            border: 3px solid rgb(112, 117, 248);
+            z-index: 1000;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        #legend h5 {
+            grid-column: 1 / span 2;
+            text-align: center;
+            background-color: #fff069;
+        }
+
+        /* Navbar Customization */
+        .navbar {
+            background-color: #fff069;
+        }
+
+        .navbar-brand {
+            color: rgb(112, 117, 248);
+            font-size: 1.5rem;
+            font-style: bold;
+        }
+
+        .navbar-brand i {
+            margin-right: 8px;
+        }
+
+        .nav-link {
+            color: rgb(112, 117, 248) !important;
+            margin-left: 15px;
+            font-size: 1.5rem;
+        }
+
+        .nav-link:hover {
+            color: #f1c40f !important;
+        }
+
+        .navbar-toggler-icon {
+            background-color: #fff069;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-earth-americas"></i> GeoPortal Kota Bogor </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="https://satupeta.jabarprov.go.id/" target="_blank">
+                            <i class="fa-solid fa-layer-group"></i> Sumber Data</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#infoModal">
+                            <i class="fa-solid fa-circle-info"></i> Info</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- INFO Modal -->
+    <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="infoModalLabel">Info Pembuat</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <tr>
+                            <th>Nama</th>
+                            <td>Rifda Najla Azzahra</td>
+                        </tr>
+                        <tr>
+                            <th>NIM</th>
+                            <td>23/523111/SV/23854</td>
+                        </tr>
+                        <tr>
+                            <th>Kelas</th>
+                            <td>B</td>
+                        </tr>
+                        <tr>
+                            <th>Github </th>
+                            <td><a href="https://github.com/nazulaa" target="_blank" rel="noopener">https://github.com/nazulaa</a></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map and Legend -->
+    <div id="map-container">
+        <div id="map"></div>
+        <div id="legend">
+            <h5>Legend</h5>
+            <img src="http://localhost:8080/geoserver/pgweb10/wms?service=WMS&request=GetLegendGraphic&version=1.0.0&layer=pgweb10:ADMINISTRASIDESA_AR_25K&format=image/png"
+                alt="Legend Administrasi Desa" />
+            <img src="http://localhost:8080/geoserver/pgweb10/wms?service=WMS&request=GetLegendGraphic&version=1.0.0&layer=pgweb10:523111_JALAN_BGOR&format=image/png"
+                alt="Legend Jalan Bogor" />
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Initialize Map
+        var map = L.map("map").setView([-6.6, 106.8], 12); // Set default map view
+
+        // Base Map Layers
+        var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        });
+
+        var googleMaps = L.tileLayer(
+            "http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+            {
+                maxZoom: 20,
+                subdomains: ["mt0", "mt1", "mt2", "mt3"],
+                attribution: "Google Maps",
+            }
+        );
+
+        var googleSatellite = L.tileLayer(
+            "http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            {
+                maxZoom: 20,
+                subdomains: ["mt0", "mt1", "mt2", "mt3"],
+                attribution: "Google Satellite",
+            }
+        );
+
+        // Default basemap
+        osm.addTo(map);
+
+        // WMS Layers
+        var administrasiDesa = L.tileLayer.wms(
+            "http://localhost:8080/geoserver/pgweb10/wms?", // URL Geoserver
+            {
+                layers: "pgweb10:ADMINISTRASIDESA_AR_25K", // Nama layer
+                format: "image/png", // Format output
+                transparent: true, // Transparansi layer
+                attribution: "Administrasi Desa AR 25K", // Atribusi
+            }
+        );
+
+        var jalanBogor = L.tileLayer.wms(
+            "http://localhost:8080/geoserver/pgweb10/wms?", // URL Geoserver
+            {
+                layers: "pgweb10:523111_JALAN_BGOR", // Nama layer
+                format: "image/png", // Format output
+                transparent: true, // Transparansi layer
+                attribution: "Jalan Bogor", // Atribusi
+            }
+        );
+
+        // Add WMS Layers to Map
+        administrasiDesa.addTo(map);
+
+        // Add Layer Control
+        var baseLayers = {
+            "OpenStreetMap": osm,
+            "Google Maps": googleMaps,
+            "Google Satellite": googleSatellite,
+        };
+
+        var overlayLayers = {
+            "Batas Administrasi Desa": administrasiDesa,
+            "Jalan Bogor": jalanBogor,
+        };
+
+        L.control.layers(baseLayers, overlayLayers, { collapsed: false }).addTo(map);
+    </script>
+</body>
+
+</html>
